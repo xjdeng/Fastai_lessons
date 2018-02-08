@@ -13,18 +13,22 @@ import warnings
 
 class BinaryClassifier(object):
     
-    def __init__(self, PATH, sz = 224, arch = resnet34):
+    def __init__(self, PATH, sz = 224, arch = resnet34, tfms = None):
         self.PATH = path(PATH)
         self.sz = 224
         self.arch = arch
+        if tfms is None:
+            self.tfms = tfms_from_model(arch, sz, aug_tfms=transforms_side_on,\
+                                        max_zoom=1.1)
+        else:
+            self.tfms = tfms
         
         self._check_inputs()
         self._build_classifier()
     
     def _build_classifier(self):
         self.data = ImageClassifierData.from_paths(self.PATH, tfms=\
-                                                   tfms_from_model(self.arch,\
-                                                                  self.sz))
+                                                   self.tfms)
         self.learn = ConvLearner.pretrained(self.arch, self.data, \
                                             precompute=True)
 
@@ -63,8 +67,17 @@ class BinaryClassifier(object):
         return rand_by_mask((self.preds == self.data.val_y)==is_correct)
     
 
-    def fit(self, lr = 0.01, epochs = 2):
-        self.learn.fit(lr, epochs)
+    def fit(self, lr = 0.01, epochs = 2, **kwargs):
+        self.learn.fit(lr, epochs, **kwargs)
+        
+    def learning_rate_finder(self):
+        self.lrf = self.learn.lr_find()
+        
+    def plot_learning_rate(self):
+        self.learn.sched.plot_lr()
+        
+    def plot_learning_rate_schedule(self):
+        self.learn.sched.plot()
         
     def plot_most_correct1(self):
         self.plot_val_with_title(self._most_by_correct(0, True),\
@@ -115,6 +128,9 @@ class BinaryClassifier(object):
         log_preds = self.learn.predict()
         self.preds = np.argmax(log_preds, axis=1)
         self.probs = np.exp(log_preds[:,1])
+    
+    def set_precompute(self, precompute):
+        self.learn.precompute = False
         
 
 def rand_by_mask(mask):
