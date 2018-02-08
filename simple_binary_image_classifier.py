@@ -17,7 +17,15 @@ class BinaryClassifier(object):
         self.arch = arch
         
         self._check_inputs()
+        self._build_classifier()
     
+    def _build_classifier(self):
+        self.data = ImageClassifierData.from_paths(self.PATH, tfms=\
+                                                   tfms_frm_model(self.arch,\
+                                                                  self.sz))
+        self.learn = ConvLearner.pretrained(self.arch, self.data, \
+                                            precompute=True)
+
     
     def _check_inputs(self):
         self.train = path(self.PATH + "/train/")
@@ -37,4 +45,6 @@ class BinaryClassifier(object):
         (path(self.valid + self.class2).exists() == False):
             raise(IOError("No matching validation class directories found"))
         
-        
+
+    def fit(self, lr = 0.01, epochs = 2):
+        self.learn.fit(lr, epochs)
