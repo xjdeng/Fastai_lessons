@@ -6,6 +6,7 @@ from fastai.dataset import *
 from fastai.sgdr import *
 from fastai.plots import *
 
+import numpy as np
 from path import Path as path
 import warnings
 
@@ -21,7 +22,7 @@ class BinaryClassifier(object):
     
     def _build_classifier(self):
         self.data = ImageClassifierData.from_paths(self.PATH, tfms=\
-                                                   tfms_frm_model(self.arch,\
+                                                   tfms_from_model(self.arch,\
                                                                   self.sz))
         self.learn = ConvLearner.pretrained(self.arch, self.data, \
                                             precompute=True)
@@ -39,8 +40,8 @@ class BinaryClassifier(object):
             warnings.warn("More than 2 directories found in training dir.")
         elif len(traindirs) < 2:
             raise(IOError("Only 1 class directory found in training dir."))
-        self.class1 = str(traindirs[0])
-        self.class2 = str(traindirs[1])
+        self.class1 = str(traindirs[0].name)
+        self.class2 = str(traindirs[1].name)
         if (path(self.valid + self.class1).exists() == False) or \
         (path(self.valid + self.class2).exists() == False):
             raise(IOError("No matching validation class directories found"))
@@ -48,3 +49,8 @@ class BinaryClassifier(object):
 
     def fit(self, lr = 0.01, epochs = 2):
         self.learn.fit(lr, epochs)
+        
+    def predict(self):
+        log_preds = self.learn.predict()
+        self.preds = np.argmax(log_preds, axis=1)
+        self.probs = np.exp(log_preds[:,1])
