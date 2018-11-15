@@ -9,6 +9,7 @@ from fastai.plots import *
 import numpy as np
 #import matplotlib.pyplot as plt
 from path import Path as path
+import random
 import warnings
 
 class BinaryClassifier(object):
@@ -135,3 +136,17 @@ class BinaryClassifier(object):
 
 def rand_by_mask(mask):
     return np.random.choice(np.where(mask)[0], 4, replace=False)
+
+def train_test_move(folder1, folder2, valid_dest, valid_pct = 0.1):
+    f1 = path(folder1)
+    f2 = path(folder2)
+    files1 = f1.files()
+    files2 = f2.files()
+    random.shuffle(files1)
+    random.shuffle(files2)
+    vf1 = path(valid_dest + "/" + str(f1.abspath().name))
+    vf2 = path(valid_dest + "/" + str(f2.abspath().name))
+    vf1.mkdir_p()
+    vf2.mkdir_p()
+    [f.move(vf1) for f in files1[0:round(valid_pct*len(files1))]]
+    [f.move(vf2) for f in files2[0:round(valid_pct*len(files2))]]
